@@ -27,3 +27,12 @@ res <- list(
 return(res)
 
                          }
+
+# b_drug_T2D: beta for total effect (Step 1); se_drug_T2D: SE for total effect (Step 1).
+# b_drug_fat: beta for the effect of drug targets on fat trits (Step 2); se_drug_fat: SE for the effect of drug targets on fat trits (Step 2).
+# b_fat_T2D: beta for the effect of fat trits on T2D risk (Step 3); se_fat_T2D: SE for the effect of fat trits on T2D risk (Step 3).
+
+Delta_method(b_exp_out = b_drug_T2D, se_exp_out = se_drug_T2D,
+             b_exp_M = b_drug_fat, se_exp_M = se_drug_fat,
+             b_M_out = b_fat_T2D, se_M_out = se_fat_T2D,
+             )
