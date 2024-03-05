@@ -1,45 +1,52 @@
 library(tidyverse)
 library(openxlsx)
 library(TwoSampleMR)
-#####################################################
-res_drugLDL_fat <- lapply(exp, function(x){
-    
-    exp_drugLDL <- extract_instruments(outcomes = "ieu-a-300", p1 = 5e-08, clump = FALSE, access_token = NULL) %>%
-                    filter(chr.exposure == x$CHR) %>%
-                    filter(pos.exposure > (x$START - (100 * 1000))) %>%
-                    filter(pos.exposure < (x$STOP + (100 * 1000))) %>%
-                      clump_data(clump_r2 = 0.2, clump_kb = 250)
+####################################################
 
-    out_drugLDL_fat <- extract_outcome_data(snps = exp_drugLDL$SNP, outcomes = c("ebi-a-GCST90016675", "ebi-a-GCST90016673", "ebi-a-GCST90016672"), proxies = T, maf_threshold = 0.1, access_token = NULL)
-    data_drugLDL_fat <- harmonise_data(exposure_dat = exp_drugLDL, outcome_dat = out_drugLDL_fat, action = 2)
-    res <- mr(data_drugLDL_fat, method_list = c("mr_wald_ratio", "mr_ivw_mre", "mr_egger_regression", "mr_weighted_median", "mr_weighted_mode"))
-    return(res)
+out_drug_fat <- extract_outcome_data(snps = exp_drug$SNP, outcomes = c("ebi-a-GCST90016675", "ebi-a-GCST90016673", "ebi-a-GCST90016672"), proxies = T, maf_threshold = 0.1, access_token = NULL)
+data_drug_fat <- harmonise_data(exposure_dat = exp_drug, outcome_dat = out_drug_fat, action = 2)
+res_drug_fat <- mr(data_drug_fat, method_list = c("mr_wald_ratio", "mr_ivw_mre", "mr_egger_regression", "mr_weighted_median", "mr_weighted_mode"))
+
+res_drug_fat <- res_drug_fat %>%
+  mutate(b = ifelse(exposure == "CETP", b, -1*b)) %>%
+  mutate(CImin = b-1.96*se,
+         CImax = b+1.96*se)
+
+###################################################
+file_fat <- list.files("./GWAS_data/fat/all", pattern = "_bgen_stats.gz$", full.names = T)
+res_drug_fat2 <- pbapply::pblapply(file_fat, function(x){
+  
+  pheno <- sub(".*/([^/]+)_bgen_stats\\.gz", '\\1', x)
+  pheno <- sub("^\\d+_", "", pheno)
+  
+  out <- read_outcome_data(filename = x,
+                      type = "outcome",
+                      sep = "\t",
+                      snps = NULL,
+                      snp_col = "SNP",
+                      beta_col = "BETA",
+                      se_col = "SE",
+                      eaf_col = "A1FREQ",
+                      effect_allele_col = "ALLELE1",
+                      other_allele_col = "ALLELE0",
+                      pval_col = "P_LINREG",
+                      chr_col = "CHR",
+                      pos_col = "BP",
+                      log_pval = FALSE)
+  out$outcome <- pheno
+  out$id.outcome <- pheno
+  res <- harmonise_data(exposure_dat = exp_drug, 
+                            outcome_dat = out, 
+                            action = 2) %>%
+    mr(method_list = c("mr_wald_ratio", "mr_ivw_mre", "mr_egger_regression", "mr_weighted_median", 
+                       "mr_weighted_mode"))
+  
+  return(res)
+  
 })
 
-res_drugTG_fat <- lapply(exp2, function(x){
-    
-    exp_drugTG <- extract_instruments(outcomes = "ieu-a-302", p1 = 5e-08, clump = FALSE, access_token = NULL) %>%
-                    filter(chr.exposure == x$CHR) %>%
-                    filter(pos.exposure > (x$START - (100 * 1000))) %>%
-                    filter(pos.exposure < (x$STOP + (100 * 1000))) %>%
-                      clump_data(clump_r2 = 0.2, clump_kb = 250)
-
-    out_drugTG_fat <- extract_outcome_data(snps = exp_drugTG$SNP, outcomes = c("ebi-a-GCST90016675", "ebi-a-GCST90016673", "ebi-a-GCST90016672"), proxies = T, maf_threshold = 0.1, access_token = NULL)
-    data_drugTG_fat <- harmonise_data(exposure_dat = exp_drugTG, outcome_dat = out_drugTG_fat, action = 2)
-    res <- mr(data_drugTG_fat, method_list = c("mr_wald_ratio", "mr_ivw_mre", "mr_egger_regression", "mr_weighted_median", "mr_weighted_mode"))
-    return(res)
-})
-
-res_drugHDL_fat <- lapply(exp3, function(x){
-    
-    exp_drugTG <- extract_instruments(outcomes = "ieu-a-299", p1 = 5e-08, clump = FALSE, access_token = NULL) %>%
-                    filter(chr.exposure == x$CHR) %>%
-                    filter(pos.exposure > (x$START - (100 * 1000))) %>%
-                    filter(pos.exposure < (x$STOP + (100 * 1000))) %>%
-                      clump_data(clump_r2 = 0.2, clump_kb = 250)
-
-    out_drugTG_fat <- extract_outcome_data(snps = exp_drugTG$SNP, outcomes = c("ebi-a-GCST90016675", "ebi-a-GCST90016673", "ebi-a-GCST90016672"), proxies = T, maf_threshold = 0.1, access_token = NULL)
-    data_drugTG_fat <- harmonise_data(exposure_dat = exp_drugTG, outcome_dat = out_drugTG_fat, action = 2)
-    res <- mr(data_drugTG_fat, method_list = c("mr_wald_ratio", "mr_ivw_mre", "mr_egger_regression", "mr_weighted_median", "mr_weighted_mode"))
-    return(res)
-})
+res_drug_fat2 <- Reduce(rbind, res_drug_fat2)
+res_drug_fat2 <- res_drug_fat2 %>%
+  mutate(b = ifelse(exposure == "CETP", b, -1*b)) %>%
+  mutate(CImin = b-1.96*se,
+         CImax = b+1.96*se)
