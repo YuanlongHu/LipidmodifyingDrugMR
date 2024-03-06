@@ -1,3 +1,10 @@
+###################################################
+#
+# Title: Ectopic Fat Accumulation as Mediator of Diabetogenic Action of Lipid-modifying Drugs: A Drug-target and Mediation Mendelian Randomization Study
+# Author: Yuanlong Hu, Xinhai Cui, Mengkai Lu, Xiuya Guan, Yuan Li, Lei Zhang, Lin Lin, Zhiyuan Zhang, Muxin Zhang, Jiaqi Hao, Xiaojie Wang, Jiaming Huan, Chao Li, Yunlun Li
+# Date: 2024-03-06
+#
+###################################################
 library(tidyverse)
 library(openxlsx)
 library(TwoSampleMR)
